@@ -1,0 +1,363 @@
+openapi: 3.0.3
+info:
+  title: Personal Task List API
+  version: 1.0.0
+  description: |
+    Minimal REST API for managing a personal task list.
+    This contract follows the current vision, user stories, and data model documents.
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+tags:
+  - name: Tasks
+    description: Task management operations
+
+paths:
+  /tasks:
+    get:
+      tags:
+        - Tasks
+      summary: Get all tasks
+      description: Returns the full list of tasks without pagination or sorting.
+      operationId: listTasks
+      responses:
+        '200':
+          description: Tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskListResponse'
+              examples:
+                success:
+                  value:
+                    data:
+                      - id: 4ad8f1ec-4ea4-4f5a-aee1-d2b77b2c2e83
+                        title: Buy groceries
+                        description: Milk, eggs, bread
+                        completed: false
+                        createdAt: '2026-05-22T14:00:00.000Z'
+                        updatedAt: '2026-05-22T14:00:00.000Z'
+                        completedAt: null
+                    message: Tasks retrieved successfully
+                    status: 200
+        '500':
+          description: Unexpected error while retrieving tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Tasks
+      summary: Create a task
+      description: Creates a new task with incomplete status by default.
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingTitle:
+                  value:
+                    data:
+                      code: VALIDATION_ERROR
+                      details:
+                        field: title
+                        issue: title is required
+                    message: Invalid request data
+                    status: 400
+        '500':
+          description: Unexpected error while creating the task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tasks/{id}:
+    get:
+      tags:
+        - Tasks
+      summary: Get a task by id
+      description: Returns a single task that matches the provided identifier.
+      operationId: getTaskById
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Task retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected error while retrieving the task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Tasks
+      summary: Update a task
+      description: Updates the title and/or description of an existing task.
+      operationId: updateTask
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected error while updating the task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Tasks
+      summary: Delete a task
+      description: Deletes a task by identifier and returns the deleted task id.
+      operationId: deleteTask
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Task deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteTaskResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected error while deleting the task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tasks/{id}/complete:
+    patch:
+      tags:
+        - Tasks
+      summary: Mark a task as completed
+      description: Marks an existing task as completed and sets completedAt.
+      operationId: completeTask
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Task marked as completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected error while marking the task as completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  parameters:
+    TaskId:
+      name: id
+      in: path
+      required: true
+      description: Unique identifier of the task
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    Task:
+      type: object
+      required:
+        - id
+        - title
+        - completed
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          default: ''
+        completed:
+          type: boolean
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateTaskRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          default: ''
+
+    UpdateTaskRequest:
+      type: object
+      minProperties: 1
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+
+    ErrorDetail:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: VALIDATION_ERROR
+        details:
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - type: string
+
+    TaskResponse:
+      type: object
+      required:
+        - data
+        - message
+        - status
+      properties:
+        data:
+          $ref: '#/components/schemas/Task'
+        message:
+          type: string
+        status:
+          type: integer
+          example: 200
+
+    TaskListResponse:
+      type: object
+      required:
+        - data
+        - message
+        - status
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        message:
+          type: string
+        status:
+          type: integer
+          example: 200
+
+    DeleteTaskResponse:
+      type: object
+      required:
+        - data
+        - message
+        - status
+      properties:
+        data:
+          type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+              format: uuid
+        message:
+          type: string
+        status:
+          type: integer
+          example: 200
+
+    ErrorResponse:
+      type: object
+      required:
+        - data
+        - message
+        - status
+      properties:
+        data:
+          $ref: '#/components/schemas/ErrorDetail'
+        message:
+          type: string
+        status:
+          type: integer
+          example: 400
