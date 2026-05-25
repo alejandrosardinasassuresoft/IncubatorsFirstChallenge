@@ -23,6 +23,6 @@
 
 | Field | Type | Required |
 |--------|------|---------|
-| data | Task or list of Tasks or or error object or null | yes |
+| data | Task or list of Tasks or or error object | yes |
 | message | string as description of the response type | yes |
 | status | number of the http status based on api response| yes |
